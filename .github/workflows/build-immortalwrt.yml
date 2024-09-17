@@ -109,6 +109,10 @@ jobs:
         sed -i 's/26000000/52000000/g' openwrt/target/linux/mediatek/dts/mt7981b-cmcc-rax3000m-emmc-ubootmod.dts
         grep max-frequency openwrt/target/linux/mediatek/dts/mt7981b-cmcc-rax3000m-emmc-ubootmod.dts
 
+    - name: SSH 连接
+      uses: P3TERX/ssh2actions@main
+      if: github.event.inputs.ssh == 'true' || contains(github.event.action, 'ssh')
+
     - name: 下载文件
       run: |
         cd openwrt
@@ -117,10 +121,6 @@ jobs:
         make download -j8 V=10
         find dl -size -1024c -exec ls -l {} \;
         find dl -size -1024c -exec rm -f {} \;
-
-    - name: SSH 连接
-      uses: P3TERX/ssh2actions@main
-      if: github.event.inputs.ssh == 'true' || contains(github.event.action, 'ssh')
 
     - name: 编译固件中
       id: compile
