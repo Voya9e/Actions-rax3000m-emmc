@@ -26,6 +26,11 @@ on:
         required: true
         default: false
         type: boolean
+      ssh:
+        description: "SSH connection to Actions"
+        required: false
+        default: false
+        type: boolean
 
 env:
   REPO_URL: https://github.com/immortalwrt/immortalwrt
@@ -103,6 +108,10 @@ jobs:
         sed -i -e '/bus-width = <8>;/ a\	cap-mmc-highspeed;' openwrt/target/linux/mediatek/dts/mt7981b-cmcc-rax3000m-emmc-ubootmod.dts
         sed -i 's/26000000/52000000/g' openwrt/target/linux/mediatek/dts/mt7981b-cmcc-rax3000m-emmc-ubootmod.dts
         grep max-frequency openwrt/target/linux/mediatek/dts/mt7981b-cmcc-rax3000m-emmc-ubootmod.dts
+
+    - name: SSH 连接
+      uses: P3TERX/ssh2actions@main
+      if: github.event.inputs.ssh == 'true' || contains(github.event.action, 'ssh')
 
     - name: 下载文件
       run: |
