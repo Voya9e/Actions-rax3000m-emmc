@@ -20,6 +20,4 @@ git clone https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app
 # 增加AdGuardHome插件和核心
 export AdGuardHome_Core="1"
 
-#添加luci-app-turboacc
-curl -sSL https://raw.githubusercontent.com/chenmozhijin/turboacc/luci/add_turboacc.sh -o add_turboacc.sh && bash add_turboacc.sh
 
