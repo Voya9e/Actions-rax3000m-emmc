@@ -15,8 +15,8 @@ sed -i 's/192.168.1.1/192.168.6.1/g' package/base-files/files/bin/config_generat
 # sed -i '$a src-git smpackage https://github.com/kenzok8/small-package' feeds.conf.default
 # sed -i '$a src-git mihomo https://github.com/morytyann/OpenWrt-mihomo.git;main' feeds.conf.default
 #添加luci-app-adguardhome
-#git clone https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome
-sed -i '$a src-git luci-app-adguardhome https://github.com/rufengsuixing/luci-app-adguardhome/tree/beta' feeds.conf.default
+git clone https://github.com/rufengsuixing/luci-app-adguardhome package/luci-app-adguardhome
+#sed -i '$a src-git luci-app-adguardhome https://github.com/rufengsuixing/luci-app-adguardhome/tree/beta' feeds.conf.default
 
 # 增加AdGuardHome插件和核心
 export AdGuardHome_Core="1"
