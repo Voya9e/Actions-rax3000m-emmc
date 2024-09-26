@@ -89,6 +89,7 @@ jobs:
         cd openwrt
         ./scripts/feeds update -a && ./scripts/feeds install -a        
         chmod +x $GITHUB_WORKSPACE/$DIY_SH && $GITHUB_WORKSPACE/$DIY_SH
+        ./scripts/feeds update -a && ./scripts/feeds install -a
 
     - name: 导入补丁和配置
       run: |
