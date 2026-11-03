@@ -36,7 +36,7 @@ jobs:
           "$FREE_DISK_SH"
           sudo -E apt-get -qq update -y
           sudo -E apt-get -qq full-upgrade -y
-          "$ENV_SH"
+          bash "$ENV_SH"
           sudo timedatectl set-timezone "$TZ"
           sudo mkdir -p /workdir
           sudo chown "$USER":"$GROUPS" /workdir
@@ -44,7 +44,7 @@ jobs:
       - name: Clone OpenWrt 25.12
         working-directory: /workdir
         run: |
-          git clone --depth 1 "$REPO_URL" -b "$REPO_BRANCH" openwrt
+          git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" openwrt
           ln -sfn /workdir/openwrt "$GITHUB_WORKSPACE/openwrt"
 
       - name: Restore build cache
@@ -77,7 +77,7 @@ jobs:
       - name: Set eMMC speed
         if: inputs.USE_52MHZ
         run: |
-          DTS= openwrt/target/linux/mediatek/dts/mt7981b-cmcc-rax3000m-emmc.dtso
+          DTS=openwrt/target/linux/mediatek/dts/mt7981b-cmcc-rax3000m-emmc.dtso
           sed -i '/bus-width = <8>;/a\            cap-mmc-highspeed;' "$DTS"
           sed -i 's/26000000/52000000/g' "$DTS"
           grep -E 'bus-width|max-frequency|cap-mmc-highspeed' "$DTS"
@@ -117,6 +117,7 @@ jobs:
             "eMMC max-frequency: \${FREQ}MHz" \
             "The stock EEPROM is used." > release.txt
           echo "FREQ=$FREQ" >> "$GITHUB_ENV"
+          echo "BUILD_DATE=$BUILD_DATE" >> "$GITHUB_ENV"
 
       - name: Publish release
         if: steps.compile.outputs.status == 'success' && !cancelled()
