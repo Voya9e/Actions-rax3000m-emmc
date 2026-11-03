@@ -52,7 +52,7 @@ jobs:
         with:
           ccache: 'true'
           mixkey: openwrt25-cortexa53
-          prefix: \${{ github.workspace }}/openwrt
+          prefix: ${{ github.workspace }}/openwrt
 
       - name: Configure feeds and LAN
         run: |
@@ -110,11 +110,12 @@ jobs:
             find . -maxdepth 1 -type f ! -name sha256sums -print0 \
               | sort -z | xargs -0 sha256sum > sha256sums
           )
-          if [ "\${{ inputs.USE_52MHZ }}" = "true" ]; then FREQ=52; else FREQ=26; fi
+          if [ "${{ inputs.USE_52MHZ }}" = "true" ]; then FREQ=52; else FREQ=26; fi
+          BUILD_DATE=$(date +%Y.%m.%d)
           printf '%s\n' \
             "OpenWrt branch: openwrt-25.12" \
             "Device: CMCC RAX3000M eMMC" \
-            "eMMC max-frequency: \${FREQ}MHz" \
+            "eMMC max-frequency: ${FREQ}MHz" \
             "The stock EEPROM is used." > release.txt
           echo "FREQ=$FREQ" >> "$GITHUB_ENV"
           echo "BUILD_DATE=$BUILD_DATE" >> "$GITHUB_ENV"
@@ -123,18 +124,10 @@ jobs:
         if: steps.compile.outputs.status == 'success' && !cancelled()
         uses: softprops/action-gh-release@v2
         env:
-          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: \${{ format('{0}-openwrt-25.12-rax3000m-emmc-{1}mhz-run{2}', github.run_started_at, env.FREQ, github.run_number) }}
-          name: OpenWrt 25.12 RAX3000M eMMC \${{ env.FREQ }}MHz
+          tag_name: ${{ format('{0}-openwrt-25.12-rax3000m-emmc-{1}mhz-run{2}', env.BUILD_DATE, env.FREQ, github.run_number) }}
+          name: OpenWrt 25.12 RAX3000M eMMC ${{ env.FREQ }}MHz
           body_path: release.txt
           files: release/*
 
-      - name: Remove older releases
-        if: steps.compile.outputs.status == 'success' && !cancelled()
-        uses: dev-drprasad/delete-older-releases@v0.2.1
-        with:
-          keep_latest: 7
-          delete_tags: true
-        env:
-          GITHUB_TOKEN: \${{ secrets.GITHUB_TOKEN }}
