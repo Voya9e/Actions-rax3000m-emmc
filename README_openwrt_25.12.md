@@ -6,7 +6,7 @@ The `Build OpenWrt 25.12` workflow compiles the official OpenWrt `openwrt-25.12`
 
 - LAN address: `192.168.6.1`
 - LuCI, Chinese base translation, and the native package manager interface for OpenWrt 25.12 (APK)
-- Existing common utilities and selected LuCI apps, including OpenClash, AdGuard Home, Argon, disk management, file browser, Samba, and ttyd
+- Existing common utilities and selected LuCI apps, including OpenClash, Argon, disk management, file browser, Samba, and ttyd
 - The default eMMC frequency is 26 MHz. The workflow can optionally build at 52 MHz; some devices may not be stable at the higher frequency.
 - The stock EEPROM is retained. OpenWrt 25.12 reads the RAX3000M eMMC calibration data through the device tree's factory-partition NVMEM path, so the older NX30 Pro replacement step is not copied into this line.
 - The MTK SDK-only hardware QoS app is omitted from this official mt76-driver line.
