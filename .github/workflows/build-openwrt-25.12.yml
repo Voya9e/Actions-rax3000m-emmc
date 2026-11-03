@@ -72,7 +72,8 @@ jobs:
           ./scripts/feeds install -p openclash luci-app-openclash
           ./scripts/feeds install -p argon luci-theme-argon
           ./scripts/feeds install -p footstrap luci-theme-footstrap
-          ./scripts/feeds install -p small luci-app-autoreboot luci-app-diskman
+          ./scripts/feeds install -p diskman luci-app-diskman
+          ./scripts/feeds install -p small luci-app-autoreboot
 
       - name: Import RAX3000M configuration
         run: |
