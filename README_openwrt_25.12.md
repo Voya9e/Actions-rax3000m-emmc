@@ -8,7 +8,7 @@ The `Build OpenWrt 25.12` workflow compiles the official OpenWrt `openwrt-25.12`
 - LuCI, Chinese base translation, and the native package manager interface for OpenWrt 25.12 (APK)
 - Existing common utilities and selected LuCI apps, including OpenClash, Argon, disk management, file browser, Samba, and ttyd
 - The default eMMC frequency is 26 MHz. The workflow can optionally build at 52 MHz; some devices may not be stable at the higher frequency.
-- The stock EEPROM is retained. OpenWrt 25.12 reads the RAX3000M eMMC calibration data through the device tree's factory-partition NVMEM path, so the older NX30 Pro replacement step is not copied into this line.
+- The workflow defaults to the repository's NX30 Pro EEPROM. It embeds the first 4096 bytes into the RAX3000M eMMC device-tree overlay using mt76's `mediatek,eeprom-data` property. Untick “Use NX30 Pro EEPROM” to keep the factory-partition EEPROM. MAC addresses continue to come from the original factory NVMEM cells.
 - The MTK SDK-only hardware QoS app is omitted from this official mt76-driver line.
 
 The release contains eMMC-specific firmware and boot artifacts only, with a generated SHA-256 list. The workflow does not remove prior releases automatically.
