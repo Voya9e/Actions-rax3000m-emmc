@@ -10,6 +10,3 @@ src-git openclash https://github.com/vernesong/OpenClash.git;master
 src-git argon https://github.com/jerrykuku/luci-theme-argon.git;master
 src-git small https://github.com/kenzok8/small-package.git
 EOF
-
-# Keep the existing AdGuard Home LuCI package.
-git clone --depth 1 https://github.com/chenmozhijin/luci-app-adguardhome.git package/luci-app-adguardhome
