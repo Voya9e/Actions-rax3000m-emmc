@@ -6,6 +6,11 @@ permissions:
 on:
   workflow_dispatch:
     inputs:
+      USE_NX30PRO_EEPROM:
+        description: Use NX30 Pro EEPROM calibration
+        required: true
+        default: true
+        type: boolean
       USE_52MHZ:
         description: Use 52MHz eMMC max-frequency (may be unstable on some devices)
         required: true
@@ -74,6 +79,13 @@ jobs:
           cd openwrt
           make defconfig
 
+      - name: Select EEPROM calibration
+        if: inputs.USE_NX30PRO_EEPROM
+        run: |
+          python3 "$GITHUB_WORKSPACE/scripts/apply-openwrt-25.12-eeprom.py" \
+            "$GITHUB_WORKSPACE/eeprom/nx30pro_eeprom.bin" \
+            openwrt/target/linux/mediatek/dts/mt7981b-cmcc-rax3000m-emmc.dtso
+
       - name: Set eMMC speed
         if: inputs.USE_52MHZ
         run: |
@@ -111,13 +123,15 @@ jobs:
               | sort -z | xargs -0 sha256sum > sha256sums
           )
           if [ "${{ inputs.USE_52MHZ }}" = "true" ]; then FREQ=52; else FREQ=26; fi
+          if [ "${{ inputs.USE_NX30PRO_EEPROM }}" = "true" ]; then EEPROM_STATUS=nx30pro_eeprom; else EEPROM_STATUS=default_eeprom; fi
           BUILD_DATE=$(date +%Y.%m.%d)
           printf '%s\n' \
             "OpenWrt branch: openwrt-25.12" \
             "Device: CMCC RAX3000M eMMC" \
             "eMMC max-frequency: ${FREQ}MHz" \
-            "The stock EEPROM is used." > release.txt
+            "EEPROM: ${EEPROM_STATUS}" > release.txt
           echo "FREQ=$FREQ" >> "$GITHUB_ENV"
+          echo "EEPROM_STATUS=$EEPROM_STATUS" >> "$GITHUB_ENV"
           echo "BUILD_DATE=$BUILD_DATE" >> "$GITHUB_ENV"
 
       - name: Publish release
@@ -126,8 +140,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ format('{0}-openwrt-25.12-rax3000m-emmc-{1}mhz-run{2}', env.BUILD_DATE, env.FREQ, github.run_number) }}
-          name: OpenWrt 25.12 RAX3000M eMMC ${{ env.FREQ }}MHz
+          tag_name: ${{ format('{0}-openwrt-25.12-rax3000m-emmc-{1}-{2}mhz-run{3}', env.BUILD_DATE, env.EEPROM_STATUS, env.FREQ, github.run_number) }}
+          name: OpenWrt 25.12 RAX3000M eMMC ${{ env.EEPROM_STATUS }} ${{ env.FREQ }}MHz
           body_path: release.txt
           files: release/*
 
