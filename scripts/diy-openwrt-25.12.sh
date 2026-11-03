@@ -9,4 +9,5 @@ cat >> feeds.conf.default <<'EOF'
 src-git openclash https://github.com/vernesong/OpenClash.git;master
 src-git argon https://github.com/jerrykuku/luci-theme-argon.git;master
 src-git small https://github.com/kenzok8/small-package.git
+src-git footstrap https://github.com/VizzleTF/luci-theme-footstrap.git
 EOF
