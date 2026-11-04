@@ -123,6 +123,10 @@ jobs:
           test -f "$SYSUPGRADE"
           cp "$SYSUPGRADE" release/openwrt-mediatek-filogic-cmcc_rax3000m-emmc-squashfs-sysupgrade.itb
           test -f release/openwrt-mediatek-filogic-cmcc_rax3000m-emmc-squashfs-sysupgrade.itb
+          INITRAMFS="$TARGET_DIR/openwrt-mediatek-filogic-cmcc_rax3000m-initramfs-recovery.itb"
+          test -f "$INITRAMFS"
+          cp "$INITRAMFS" release/openwrt-mediatek-filogic-cmcc_rax3000m-emmc-initramfs-recovery.itb
+          test -f release/openwrt-mediatek-filogic-cmcc_rax3000m-emmc-initramfs-recovery.itb
           test -n "$(find release -maxdepth 1 -type f -print -quit)"
           (
             cd release
