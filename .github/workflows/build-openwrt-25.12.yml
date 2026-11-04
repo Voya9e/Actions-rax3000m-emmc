@@ -116,8 +116,13 @@ jobs:
         if: steps.compile.outputs.status == 'success'
         run: |
           mkdir -p release
-          find openwrt/bin/targets/mediatek/filogic -maxdepth 1 -type f \
+          TARGET_DIR=openwrt/bin/targets/mediatek/filogic
+          find "$TARGET_DIR" -maxdepth 1 -type f \
             -name '*cmcc_rax3000m-emmc*' -exec cp {} release/ \;
+          SYSUPGRADE="$TARGET_DIR/openwrt-mediatek-filogic-cmcc_rax3000m-squashfs-sysupgrade.itb"
+          test -f "$SYSUPGRADE"
+          cp "$SYSUPGRADE" release/openwrt-mediatek-filogic-cmcc_rax3000m-emmc-squashfs-sysupgrade.itb
+          test -f release/openwrt-mediatek-filogic-cmcc_rax3000m-emmc-squashfs-sysupgrade.itb
           test -n "$(find release -maxdepth 1 -type f -print -quit)"
           (
             cd release
