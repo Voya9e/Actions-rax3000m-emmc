@@ -16,12 +16,14 @@
 
 | 路线 | 固件来源 | 无线驱动 | 说明 |
 | --- | --- | --- | --- |
-| **OpenWrt 25.12** | OpenWrt 官方 `openwrt-25.12` 分支 | 开源 `mt76` | 新版主线方案，推荐新装或迁移使用 |
-| **ImmortalWrt MT798x** | hanwckf `openwrt-21.02` 分支 | MTK SDK `mt_wifi` | 旧版方案，包含 MTK SDK 无线配置选项 |
+| **OpenWrt 25.12** | OpenWrt 官方 `openwrt-25.12` 分支 | 开源 `mt76` | 官方新版本，Linux 6.12 |
+| **ImmortalWrt 23.05** | ImmortalWrt 官方 `openwrt-23.05` 分支 | 开源 `mt76` | 较旧稳定路线，Linux 5.15 |
+| **ImmortalWrt MT798x** | hanwckf `immortalwrt-mt798x` 分支（工作流未固定分支） | MTK SDK `mt_wifi` | SDK 驱动路线，提供 MTK 无线配置选项 |
 
 - [OpenWrt 25.12 构建说明](README_openwrt_25.12.md)
-- [ImmortalWrt 开源驱动构建说明](README_mainline.md)
-- [旧版 MTK SDK 工作流](.github/workflows/build-immortalwrt-mt798x.yml)
+- [ImmortalWrt 23.05 开源驱动说明](README_mainline.md)
+- [ImmortalWrt MT798x 工作流](.github/workflows/build-immortalwrt-mt798x.yml)
+- [OpenWrt 25.12 工作流](.github/workflows/build-openwrt-25.12.yml)
 
 ## 快速开始
 
