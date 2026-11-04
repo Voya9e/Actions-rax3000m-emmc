@@ -62,12 +62,6 @@
 | `openwrt-mediatek-filogic-cmcc_rax3000m-emmc-ddr4-bl31-uboot.fip` | DDR4 eMMC | 包含 BL31 与 U-Boot 的启动镜像。 |
 | `openwrt-mediatek-filogic-cmcc_rax3000m-emmc-gpt.bin` | RAX3000M eMMC | eMMC GPT 分区布局文件。 |
 
-### 校验文件
-
-| 文件名 | 用途 |
-|:--|:--|
-| `sha256sums` | 上述发布文件的 SHA-256 校验值，可用于验证下载完整性。 |
-
 > [!IMPORTANT]
 > DDR3 与 DDR4 启动文件必须按设备内存类型匹配，不能交叉使用。刷写启动文件或 GPT 前，请确认设备型号、内存类型和现有 U-Boot 布局，并遵循对应刷机说明。
 
