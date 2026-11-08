@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Keep the LAN address used by the existing RAX3000M firmware.
-sed -i 's/192\\.168\\.1\\.1/192.168.6.1/g' package/base-files/files/bin/config_generate
+sed -i 's/192[.]168[.]1[.]1/192.168.6.1/g' package/base-files/files/bin/config_generate
 
 # Enable both RAX3000M radios with the requested open-network SSIDs on first boot.
 WIFI_DEFAULTS=target/linux/mediatek/filogic/base-files/etc/uci-defaults/99-rax3000m-wifi
@@ -10,7 +10,7 @@ mkdir -p "$(dirname "$WIFI_DEFAULTS")"
 cat > "$WIFI_DEFAULTS" <<'EOF'
 #!/bin/sh
 
-for radio in $(uci show wireless | sed -n 's/^wireless\\.\\([^=]*\\)=wifi-device$/\\1/p'); do
+for radio in $(uci show wireless | grep '=wifi-device$' | cut -d. -f2 | cut -d= -f1); do
     band="$(uci -q get "wireless.$radio.band")"
     case "$band" in
         2g) ssid='蓝袜子' ;;
@@ -20,7 +20,7 @@ for radio in $(uci show wireless | sed -n 's/^wireless\\.\\([^=]*\\)=wifi-device
 
     uci -q set "wireless.$radio.disabled=0"
 
-    for iface in $(uci show wireless | sed -n 's/^wireless\\.\\([^=]*\\)=wifi-iface$/\\1/p'); do
+    for iface in $(uci show wireless | grep '=wifi-iface$' | cut -d. -f2 | cut -d= -f1); do
         [ "$(uci -q get "wireless.$iface.device")" = "$radio" ] || continue
         uci -q set "wireless.$iface.ssid=$ssid"
         uci -q set "wireless.$iface.encryption=none"
