@@ -137,7 +137,7 @@ jobs:
           if [ "${{ inputs.USE_52MHZ }}" = "true" ]; then FREQ=52; else FREQ=26; fi
           if [ "${{ inputs.USE_NX30PRO_EEPROM }}" = "true" ]; then EEPROM_STATUS=nx30pro_eeprom; else EEPROM_STATUS=default_eeprom; fi
           BUILD_DATE=$(date +%Y.%m.%d)
-          printf '%s\\n' \
+          printf '%s\n' \
             "OpenWrt branch: openwrt-25.12" \
             "Device: CMCC RAX3000M eMMC" \
             "eMMC max-frequency: ${FREQ}MHz" \
