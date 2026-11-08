@@ -5,8 +5,8 @@ The `Build OpenWrt 25.12` workflow compiles the official OpenWrt `openwrt-25.12`
 ## Included customizations
 
 - LAN address: `192.168.6.1`
-- LuCI, Chinese base translation, and the native package manager interface for OpenWrt 25.12 (APK)
-- Existing common utilities and selected LuCI apps, including OpenClash, Argon and Footstrap themes, disk management, file browser, Samba, and ttyd. OpenClash tracks its upstream `dev` feed; File Browser comes from the official LuCI feed.
+- LuCI, Simplified Chinese language packs for the base interface, package manager, firewall, file browser, Disk Manager, Samba, and ttyd, plus the native package manager interface for OpenWrt 25.12 (APK). Select Simplified Chinese under **System → System → Language and Style**.
+- Existing common utilities and selected LuCI apps, including OpenClash, Argon and Footstrap themes, disk management, file browser, Samba, and ttyd. OpenClash tracks its upstream `dev` feed; its Simplified Chinese translation is bundled in the app.
 - Disk Manager uses [sbwml's ucode-based port](https://github.com/sbwml/luci-app-diskman), which declares support for OpenWrt 24.10 and newer.
 - Footstrap is included as an additional LuCI theme; choose it under **System → System → Language and Style → Design**. Its current translation packages cover Russian and Spanish, so the theme's own untranslated text falls back to English.
 - USB drive support: USB mass storage and UAS drivers, block device mounting tools, and filesystem support for ext4, FAT32/VFAT, exFAT, NTFS3, Btrfs, XFS, and the already included F2FS. USB drive partitions can be mounted/configured through the system tools; automatic mounting can be configured with fstab.
