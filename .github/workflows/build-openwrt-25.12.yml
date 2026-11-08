@@ -74,6 +74,7 @@ jobs:
           ./scripts/feeds install -p footstrap luci-theme-footstrap
           ./scripts/feeds install -p diskman luci-app-diskman
           ./scripts/feeds install -p small luci-app-autoreboot
+          python3 "$GITHUB_WORKSPACE/scripts/apply-openwrt-25.12-theme-menu.py" "$PWD"
 
       - name: Import RAX3000M configuration
         run: |
@@ -155,4 +156,3 @@ jobs:
           name: OpenWrt 25.12 RAX3000M eMMC ${{ env.EEPROM_STATUS }} ${{ env.FREQ }}MHz
           body_path: release.txt
           files: release/*
-
