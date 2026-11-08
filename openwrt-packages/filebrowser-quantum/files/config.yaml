@@ -12,6 +12,9 @@ server:
     - path: "/mnt"
       config:
         defaultEnabled: true
+        rules:
+          - folderPath: "/"
+            viewable: true
 
 auth:
   methods:
