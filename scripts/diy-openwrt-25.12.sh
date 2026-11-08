@@ -34,13 +34,13 @@ exit 0
 EOF
 chmod 0755 "$WIFI_DEFAULTS"
 
-# Set the router's default system time zone to Hong Kong on first boot.
+# Set the router's default system time zone to Shanghai on first boot.
 TIMEZONE_DEFAULTS=target/linux/mediatek/filogic/base-files/etc/uci-defaults/98-rax3000m-timezone
 cat > "$TIMEZONE_DEFAULTS" <<'EOF'
 #!/bin/sh
 
-uci -q set 'system.@system[0].timezone=HKT-8'
-uci -q set 'system.@system[0].zonename=Asia/Hong_Kong'
+uci -q set 'system.@system[0].timezone=CST-8'
+uci -q set 'system.@system[0].zonename=Asia/Shanghai'
 uci commit system
 exit 0
 EOF
