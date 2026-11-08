@@ -74,6 +74,7 @@ jobs:
           ./scripts/feeds install -p footstrap luci-theme-footstrap
           ./scripts/feeds install -p diskman luci-app-diskman
           ./scripts/feeds install -p small luci-app-autoreboot
+          cp -R "$GITHUB_WORKSPACE/openwrt-packages/filebrowser-quantum" package/
           python3 "$GITHUB_WORKSPACE/scripts/apply-openwrt-25.12-theme-menu.py" "$PWD"
 
       - name: Import RAX3000M configuration

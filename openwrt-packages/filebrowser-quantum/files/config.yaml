@@ -1,0 +1,24 @@
+http:
+  listen: "0.0.0.0"
+  port: 8080
+  baseURL: "/"
+
+server:
+  database:
+    path: "/etc/filebrowser-quantum/filebrowser.sqlite"
+  cacheDir: "/etc/filebrowser-quantum/cache"
+  disablePreviews: true
+  sources:
+    - path: "/mnt"
+      config:
+        defaultEnabled: true
+        rules:
+          - folderPath: "/"
+            viewable: true
+
+auth:
+  methods:
+    password:
+      enabled: true
+      minLength: 8
+      signup: false
