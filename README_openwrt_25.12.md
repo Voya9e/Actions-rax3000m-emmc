@@ -5,7 +5,7 @@ The `Build OpenWrt 25.12` workflow compiles the official OpenWrt `openwrt-25.12`
 ## Included customizations
 
 - LAN address: `192.168.6.1`
-- Default router time zone: Hong Kong (`Asia/Hong_Kong`, `HKT-8`, UTC+8).
+- Default router time zone: Shanghai (`Asia/Shanghai`, `CST-8`, UTC+8).
 - On first boot, both Wi-Fi radios are enabled: 2.4 GHz SSID `蓝袜子` and 5 GHz SSID `BlueSock`. Both are open networks without a password.
 - LuCI, Simplified Chinese language packs for the base interface, package manager, firewall, file browser, Disk Manager, Samba, and ttyd, plus the native package manager interface for OpenWrt 25.12 (APK). Select Simplified Chinese under **System → System → Language and Style**.
 - Existing common utilities and selected LuCI apps, including OpenClash, Argon and Footstrap themes, disk management, file browser, Samba, and ttyd. OpenClash tracks its upstream `dev` feed; its Simplified Chinese translation is bundled in the app.
