@@ -38,8 +38,9 @@ replace_once(
 \t\t}''',
 )
 
+# The build installs Argon from the small feed, so patch its actual source path.
 replace_once(
-    "feeds/argon/luci-theme-argon/root/usr/share/luci/menu.d/"
+    "feeds/small/luci-theme-argon/root/usr/share/luci/menu.d/"
     "luci-app-argon-config.json",
     '''"uci": { "argon": true }''',
     '''"uci": {
