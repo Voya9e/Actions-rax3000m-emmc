@@ -2,7 +2,37 @@
 set -euo pipefail
 
 # Keep the LAN address used by the existing RAX3000M firmware.
-sed -i 's/192\.168\.1\.1/192.168.6.1/g' package/base-files/files/bin/config_generate
+sed -i 's/192\\.168\\.1\\.1/192.168.6.1/g' package/base-files/files/bin/config_generate
+
+# Enable both RAX3000M radios with the requested open-network SSIDs on first boot.
+WIFI_DEFAULTS=target/linux/mediatek/filogic/base-files/etc/uci-defaults/99-rax3000m-wifi
+mkdir -p "$(dirname "$WIFI_DEFAULTS")"
+cat > "$WIFI_DEFAULTS" <<'EOF'
+#!/bin/sh
+
+for radio in $(uci show wireless | sed -n 's/^wireless\\.\\([^=]*\\)=wifi-device$/\\1/p'); do
+    band="$(uci -q get "wireless.$radio.band")"
+    case "$band" in
+        2g) ssid='蓝袜子' ;;
+        5g) ssid='BlueSock' ;;
+        *) continue ;;
+    esac
+
+    uci -q set "wireless.$radio.disabled=0"
+
+    for iface in $(uci show wireless | sed -n 's/^wireless\\.\\([^=]*\\)=wifi-iface$/\\1/p'); do
+        [ "$(uci -q get "wireless.$iface.device")" = "$radio" ] || continue
+        uci -q set "wireless.$iface.ssid=$ssid"
+        uci -q set "wireless.$iface.encryption=none"
+        uci -q delete "wireless.$iface.key" || true
+        uci -q set "wireless.$iface.disabled=0"
+    done
+done
+
+uci commit wireless
+exit 0
+EOF
+chmod 0755 "$WIFI_DEFAULTS"
 
 # Add packages that are not shipped in the official OpenWrt feeds.
 cat >> feeds.conf.default <<'EOF'
