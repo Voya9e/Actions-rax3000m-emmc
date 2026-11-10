@@ -38,6 +38,7 @@ source = re.sub(
     source,
 )
 source = source.replace("  DEPENDS:=$(GO_ARCH_DEPENDS)\n", "")
+source = source.replace("PKG_LICENSE_FILES:=LICENSE\n", "")
 
 # Copy the already-built ARM64 executable into the package build directory.
 # The explicit ':' recipe prevents package.mk from falling back to Go compile.
