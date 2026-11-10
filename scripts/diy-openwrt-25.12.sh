@@ -66,4 +66,3 @@ src-git diskman https://github.com/sbwml/luci-app-diskman.git
 src-git footstrap https://github.com/VizzleTF/luci-theme-footstrap.git
 src-git jell https://github.com/kenzok8/jell.git
 EOF
-
