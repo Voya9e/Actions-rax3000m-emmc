@@ -16,7 +16,8 @@ curl -fL --retry 3 --retry-delay 2 "$SMART_URL" -o "$TMP_DIR/clash-smart.tar.gz"
 tar -xzf "$TMP_DIR/clash-smart.tar.gz" -C "$TMP_DIR" clash
 test -s "$TMP_DIR/clash"
 install -m 0755 "$TMP_DIR/clash" "$CORE_DIR/clash_meta"
-"$CORE_DIR/clash_meta" -v
+# The build runner is x86_64; inspect the target ELF instead of executing it here.
+readelf -h "$CORE_DIR/clash_meta" | grep -Eq "Machine:[[:space:]]+AArch64"
 
 # Geo databases used by OpenClash.
 GEOIP_URL="https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"
