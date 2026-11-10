@@ -46,10 +46,24 @@ exit 0
 EOF
 chmod 0755 "$TIMEZONE_DEFAULTS"
 
+# Set LuCI's default interface language to Simplified Chinese on first boot.
+LANGUAGE_DEFAULTS=target/linux/mediatek/filogic/base-files/etc/uci-defaults/97-rax3000m-luci-language
+mkdir -p "$(dirname "$LANGUAGE_DEFAULTS")"
+cat > "$LANGUAGE_DEFAULTS" <<'EOF'
+#!/bin/sh
+
+uci -q set 'luci.main.lang=zh_cn'
+uci commit luci
+exit 0
+EOF
+chmod 0755 "$LANGUAGE_DEFAULTS"
+
 # Add packages that are not shipped in the official OpenWrt feeds.
 cat >> feeds.conf.default <<'EOF'
 src-git openclash https://github.com/vernesong/OpenClash.git;dev
 src-git small https://github.com/kenzok8/small-package.git
 src-git diskman https://github.com/sbwml/luci-app-diskman.git
 src-git footstrap https://github.com/VizzleTF/luci-theme-footstrap.git
+src-git jell https://github.com/kenzok8/jell.git
 EOF
+
