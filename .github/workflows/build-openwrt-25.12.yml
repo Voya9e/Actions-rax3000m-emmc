@@ -159,3 +159,14 @@ jobs:
           body_path: release.txt
           files: release/*
 
+      - name: Keep latest 7 OpenWrt 25.12 releases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release list --limit 1000 --json tagName,publishedAt \
+            --jq '[.[] | select(.tagName | contains("-openwrt-25.12-rax3000m-emmc-"))] | sort_by(.publishedAt) | reverse | .[7:] | .[].tagName' \
+            | while IFS= read -r tag; do
+                [ -n "$tag" ] || continue
+                gh release delete "$tag" --cleanup-tag --yes
+              done
+
