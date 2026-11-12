@@ -16,7 +16,7 @@ The `Build OpenWrt 25.12` workflow compiles the official OpenWrt `openwrt-25.12`
 - The workflow defaults to the repository's NX30 Pro EEPROM. It embeds the first 4096 bytes into the RAX3000M eMMC device-tree overlay using mt76's `mediatek,eeprom-data` property. Untick “Use NX30 Pro EEPROM” to keep the factory-partition EEPROM. MAC addresses continue to come from the original factory NVMEM cells.
 - The MTK SDK-only hardware QoS app is omitted from this official mt76-driver line.
 
-The release contains eMMC-specific firmware and boot artifacts only, with a generated SHA-256 list. The workflow does not remove prior releases automatically.
+The release contains eMMC-specific firmware and boot artifacts only, with a generated SHA-256 list. After each successful OpenWrt 25.12 build, the workflow retains the latest seven matching releases and deletes older releases together with their tags. Other release lines are unaffected.
 
 To build, open **Actions**, select **Build OpenWrt 25.12**, choose the optional 52 MHz setting if needed, and select **Run workflow**.
 
