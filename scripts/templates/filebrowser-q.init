@@ -30,7 +30,7 @@ start_service() {
         mkdir -p "$(dirname "$CONF_PATH")"
 
         if [ -s "$LEGACY_DB_PATH" ]; then
-            migrate_from="      migrateFrom: \"$LEGACY_DB_PATH\""
+            migrate_from="    migrateFrom: \"$LEGACY_DB_PATH\""
         fi
 
         cat <<EOF > "$CONF_PATH"
