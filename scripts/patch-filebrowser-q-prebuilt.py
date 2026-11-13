@@ -146,74 +146,9 @@ if not re.search(r"(?ms)^define Build/Compile\n\t:\nendef", source):
     raise SystemExit("FileBrowser compile target is not an explicit no-op")
 
 
-# Install the v2 init template and one-shot admin-password bootstrap alongside
-# the prebuilt backend package.
-package_dir = Path(sys.argv[1]) / "feeds/jell/filebrowser-q"
-package_files = package_dir / "files"
-template_dir = Path(__file__).resolve().parent / "templates"
-package_files.mkdir(parents=True, exist_ok=True)
-
-for template_name, package_name in (
-    ("filebrowser-q.init", "filebrowser.init"),
-    ("filebrowser-q.bootstrap", "filebrowser.bootstrap"),
-):
-    template = template_dir / template_name
-    if not template.is_file():
-        raise SystemExit(f"Missing FileBrowser template: {template}")
-    (package_files / package_name).write_text(
-        template.read_text(encoding="utf-8"),
-        encoding="utf-8",
-    )
-
-# Ship the one-shot bootstrap helper in the backend package.
-init_install = (
-    "\t$(INSTALL_BIN) $(CURDIR)/files/filebrowser.init "
-    "$(1)/etc/init.d/filebrowser-q\n"
-)
-bootstrap_install = (
-    "\t$(INSTALL_DIR) $(1)/usr/libexec\n"
-    "\t$(INSTALL_BIN) $(CURDIR)/files/filebrowser.bootstrap "
-    "$(1)/usr/libexec/filebrowser-q-bootstrap\n"
-)
-if "filebrowser-q-bootstrap" not in source:
-    if source.count(init_install) != 1:
-        raise SystemExit(f"Expected one init install line in {makefile}")
-    source = source.replace(init_install, init_install + bootstrap_install, 1)
-
-# Enable the service by default in fresh firmware images.
-config_file = package_files / "filebrowser.config"
-config_source = config_file.read_text(encoding="utf-8")
-disabled_default = "option enabled '0'"
-enabled_default = "option enabled '1'"
-if disabled_default in config_source:
-    if config_source.count(disabled_default) != 1:
-        raise SystemExit(f"Expected one disabled option in {config_file}")
-    config_source = config_source.replace(disabled_default, enabled_default, 1)
-elif enabled_default not in config_source:
-    raise SystemExit(f"Could not find the FileBrowser enabled default in {config_file}")
-config_file.write_text(config_source, encoding="utf-8")
-
-# Ensure first boot enables and starts the service, even if the package's
-# init script is not yet linked into rc.d by the image build.
-uci_defaults = (
-    Path(sys.argv[1])
-    / "target/linux/mediatek/filogic/base-files/etc/uci-defaults/96-filebrowser-q"
-)
-uci_defaults.parent.mkdir(parents=True, exist_ok=True)
-uci_defaults.write_text(
-    "#!/bin/sh\n"
-    "uci -q set 'filebrowser-q.config.enabled=1'\n"
-    "uci -q commit filebrowser-q\n"
-    "/etc/init.d/filebrowser-q enable\n"
-    "/etc/init.d/filebrowser-q start\n"
-    "exit 0\n",
-    encoding="utf-8",
-)
-uci_defaults.chmod(0o755)
-
 makefile.write_text(source, encoding="utf-8")
 print(
     "Patched FileBrowser Quantum version "
     f"{upstream_version} as APK version {apk_version}; "
-    f"using GitHub SHA-256 {asset_sha256} and installing the ARM64 binary without Go compilation"
+    f"using GitHub SHA-256 {asset_sha256} and selecting the ARM64 binary without Go compilation"
 )
