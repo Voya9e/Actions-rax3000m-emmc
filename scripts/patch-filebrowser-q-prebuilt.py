@@ -168,12 +168,12 @@ for template_name, package_name in (
 # Ship the one-shot bootstrap helper in the backend package.
 init_install = (
     "\t$(INSTALL_BIN) $(CURDIR)/files/filebrowser.init "
-    "$(1)/etc/init.d/filebrowser-q\\n"
+    "$(1)/etc/init.d/filebrowser-q\n"
 )
 bootstrap_install = (
-    "\t$(INSTALL_DIR) $(1)/usr/libexec\\n"
+    "\t$(INSTALL_DIR) $(1)/usr/libexec\n"
     "\t$(INSTALL_BIN) $(CURDIR)/files/filebrowser.bootstrap "
-    "$(1)/usr/libexec/filebrowser-q-bootstrap\\n"
+    "$(1)/usr/libexec/filebrowser-q-bootstrap\n"
 )
 if "filebrowser-q-bootstrap" not in source:
     if source.count(init_install) != 1:
@@ -201,12 +201,12 @@ uci_defaults = (
 )
 uci_defaults.parent.mkdir(parents=True, exist_ok=True)
 uci_defaults.write_text(
-    "#!/bin/sh\\n"
-    "uci -q set 'filebrowser-q.config.enabled=1'\\n"
-    "uci -q commit filebrowser-q\\n"
-    "/etc/init.d/filebrowser-q enable\\n"
-    "/etc/init.d/filebrowser-q start\\n"
-    "exit 0\\n",
+    "#!/bin/sh\n"
+    "uci -q set 'filebrowser-q.config.enabled=1'\n"
+    "uci -q commit filebrowser-q\n"
+    "/etc/init.d/filebrowser-q enable\n"
+    "/etc/init.d/filebrowser-q start\n"
+    "exit 0\n",
     encoding="utf-8",
 )
 uci_defaults.chmod(0o755)
