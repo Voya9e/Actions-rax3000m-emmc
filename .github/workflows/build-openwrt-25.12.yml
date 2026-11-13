@@ -1,3 +1,4 @@
+
 name: Build OpenWrt 25.12
 
 permissions:
@@ -76,6 +77,7 @@ jobs:
           ./scripts/feeds install -p small luci-app-autoreboot
           ./scripts/feeds install -p kiddin9 luci-app-filebrowser-q
           ./scripts/feeds install -p kiddin9 filebrowser-q
+          python3 "$GITHUB_WORKSPACE/scripts/patch-filebrowser-q-prebuilt.py" "$PWD"
           python3 "$GITHUB_WORKSPACE/scripts/apply-openwrt-25.12-theme-menu.py" "$PWD"
 
       - name: Import RAX3000M configuration
@@ -169,4 +171,5 @@ jobs:
                 [ -n "$tag" ] || continue
                 gh release delete "$tag" --cleanup-tag --yes
               done
+
 
