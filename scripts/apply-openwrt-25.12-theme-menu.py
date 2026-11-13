@@ -25,6 +25,19 @@ def replace_once(relative_path: str, old: str, new: str) -> None:
     path.write_text(source.replace(old, new, 1), encoding="utf-8")
 
 
+def replace_all(relative_path: str, old: str, new: str) -> None:
+    path = root / relative_path
+    source = path.read_text(encoding="utf-8")
+    if old not in source:
+        if new in source:
+            return
+        raise SystemExit(
+            f"Expected patch target in {path}, found none; "
+            "upstream source may have changed"
+        )
+    path.write_text(source.replace(old, new), encoding="utf-8")
+
+
 replace_once(
     "feeds/footstrap/luci-theme-footstrap/root/usr/share/luci/menu.d/"
     "luci-theme-footstrap.json",
@@ -51,6 +64,21 @@ replace_once(
 \t\t\t\t\t"main": { "mediaurlbase": "/luci-static/argon" }
 \t\t\t\t}
 \t\t\t}''',
+)
+
+
+# Both custom theme sidebars consume the full LuCI menu tree; omit nodes whose
+# theme/ACL dependencies are not satisfied for the active theme.
+replace_all(
+    "feeds/footstrap/luci-theme-footstrap/htdocs/luci-static/resources/fs-chrome.js",
+    "const children = ui.menu.getChildren(node);",
+    "const children = ui.menu.getChildren(node).filter((child) => child.satisfied !== false);",
+)
+
+replace_all(
+    "feeds/small/luci-theme-argon/htdocs/luci-static/resources/menu-argon.js",
+    "var children = ui.menu.getChildren(tree);",
+    "var children = ui.menu.getChildren(tree).filter(function (child) { return child.satisfied !== false; });",
 )
 
 # The dispatcher caches menu dependencies by menu-file metadata. Include the
