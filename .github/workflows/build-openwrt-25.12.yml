@@ -74,7 +74,8 @@ jobs:
           ./scripts/feeds install -p footstrap luci-theme-footstrap
           ./scripts/feeds install -p diskman luci-app-diskman
           ./scripts/feeds install -p small luci-app-autoreboot
-          ./scripts/feeds install -p jell luci-app-filebrowser-q
+          ./scripts/feeds install -p kiddin9 luci-app-filebrowser-q
+          ./scripts/feeds install -p jell filebrowser-q
           python3 "$GITHUB_WORKSPACE/scripts/patch-filebrowser-q-prebuilt.py" "$PWD"
           python3 "$GITHUB_WORKSPACE/scripts/apply-openwrt-25.12-theme-menu.py" "$PWD"
 
