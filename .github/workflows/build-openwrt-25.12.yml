@@ -145,7 +145,8 @@ jobs:
             "OpenWrt branch: openwrt-25.12" \
             "Device: CMCC RAX3000M eMMC" \
             "eMMC max-frequency: ${FREQ}MHz" \
-            "EEPROM: ${EEPROM_STATUS}" > release.txt
+            "EEPROM: ${EEPROM_STATUS}" \
+            "VidBee Web: http://192.168.6.1:3000 (first boot initializes the data partition, 1 GiB swap, and downloads official ARM64 images when Internet is available)" > release.txt
           echo "FREQ=$FREQ" >> "$GITHUB_ENV"
           echo "EEPROM_STATUS=$EEPROM_STATUS" >> "$GITHUB_ENV"
           echo "BUILD_DATE=$BUILD_DATE" >> "$GITHUB_ENV"
