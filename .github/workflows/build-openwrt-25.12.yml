@@ -21,6 +21,8 @@ on:
 env:
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: openwrt-25.12
+  THUNDER_REPO: https://github.com/Voya9e/thunder.git
+  THUNDER_COMMIT: f0730e35caae492c2e9ec33472516f683c537435
   FREE_DISK_SH: scripts/free_disk_space.sh
   ENV_SH: scripts/environment.sh
   DIY_SH: scripts/diy-openwrt-25.12.sh
@@ -51,7 +53,34 @@ jobs:
         working-directory: /workdir
         run: |
           git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" openwrt
+          git init thunder
+          git -C thunder remote add origin "$THUNDER_REPO"
+          git -C thunder fetch --depth 1 origin "$THUNDER_COMMIT"
+          git -C thunder checkout --detach FETCH_HEAD
+          test -f thunder/openwrt/thunder/Makefile
           ln -sfn /workdir/openwrt "$GITHUB_WORKSPACE/openwrt"
+
+      - name: Set up Rust for Thunder
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-musl
+
+      - name: Set up Zig cross linker
+        uses: mlugg/setup-zig@v2
+        with:
+          version: 0.13.0
+
+      - name: Compile Thunder for RAX3000M
+        run: |
+          cd /workdir/thunder
+          cargo install cargo-zigbuild --version 0.24.1 --locked
+          export CC_aarch64_unknown_linux_musl="zig cc -target aarch64-linux-musl"
+          export CXX_aarch64_unknown_linux_musl="zig c++ -target aarch64-linux-musl"
+          export AR_aarch64_unknown_linux_musl="zig ar"
+          export RUSTFLAGS="-C target-cpu=cortex-a53"
+          cargo zigbuild --release --target aarch64-unknown-linux-musl
+          test -x target/aarch64-unknown-linux-musl/release/thunder
+          echo "THUNDER_BIN=/workdir/thunder/target/aarch64-unknown-linux-musl/release/thunder" >> "$GITHUB_ENV"
 
       - name: Restore build cache
         uses: klever1988/cachewrtbuild@main
@@ -77,6 +106,7 @@ jobs:
           ./scripts/feeds install -p small luci-app-autoreboot
           ./scripts/feeds install -p kiddin9 luci-app-filebrowser-q
           ./scripts/feeds install -p kiddin9 filebrowser-q
+          ./scripts/feeds install -p thunder thunder luci-app-thunder
           python3 "$GITHUB_WORKSPACE/scripts/patch-filebrowser-q-prebuilt.py" "$PWD"
           python3 "$GITHUB_WORKSPACE/scripts/apply-openwrt-25.12-theme-menu.py" "$PWD"
 
@@ -146,6 +176,7 @@ jobs:
             "Device: CMCC RAX3000M eMMC" \
             "eMMC max-frequency: ${FREQ}MHz" \
             "EEPROM: ${EEPROM_STATUS}" \
+            "Thunder LuCI: Services → 迅雷 (core initialization is manual)" \
             "VidBee Web: http://192.168.6.1:3000 (first boot initializes the data partition, 1 GiB swap, and downloads official ARM64 images when Internet is available)" > release.txt
           echo "FREQ=$FREQ" >> "$GITHUB_ENV"
           echo "EEPROM_STATUS=$EEPROM_STATUS" >> "$GITHUB_ENV"

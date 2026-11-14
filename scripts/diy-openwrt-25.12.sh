@@ -89,6 +89,22 @@ exit 0
 EOF
 chmod 0755 "$LANGUAGE_DEFAULTS"
 
+# Keep Thunder's core and downloads on the dedicated eMMC data partition.
+THUNDER_DEFAULTS=target/linux/mediatek/filogic/base-files/etc/uci-defaults/95-rax3000m-thunder-storage
+mkdir -p "$(dirname "$THUNDER_DEFAULTS")"
+cat > "$THUNDER_DEFAULTS" <<'EOF'
+#!/bin/sh
+
+if [ -f /etc/config/thunder ]; then
+    uci -q set 'thunder.main.config_path=/data/thunder'
+    uci -q set 'thunder.main.download_path=/data/thunder/downloads'
+    uci -q set 'thunder.main.mount_bind_download_path=/thunder'
+    uci -q commit thunder
+fi
+exit 0
+EOF
+chmod 0755 "$THUNDER_DEFAULTS"
+
 # Start VidBee automatically from official ARM64 container images on the eMMC data partition.
 DATA_INIT=package/base-files/files/etc/init.d/rax3000m-data
 mkdir -p "$(dirname "$DATA_INIT")"
@@ -319,4 +335,5 @@ src-git small https://github.com/kenzok8/small-package.git
 src-git diskman https://github.com/sbwml/luci-app-diskman.git
 src-git footstrap https://github.com/VizzleTF/luci-theme-footstrap.git
 src-git kiddin9 https://github.com/kiddin9/op-packages.git
+src-link thunder /workdir/thunder/openwrt
 EOF
