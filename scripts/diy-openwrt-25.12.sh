@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Set the router hostname and LuCI system description on first boot.
+SYSTEM_DEFAULTS=package/base-files/files/etc/uci-defaults/99-rax3000m-system
+mkdir -p "$(dirname "$SYSTEM_DEFAULTS")"
+cat > "$SYSTEM_DEFAULTS" <<'EOF'
+#!/bin/sh
+
+uci -q set 'system.@system[0].hostname=bAIR'
+uci -q set 'system.@system[0].description=A bair ef socks.'
+uci commit system
+exit 0
+EOF
+chmod 0755 "$SYSTEM_DEFAULTS"
+
 # Match the RAX3000M 64 GB eMMC data area: a 57 GiB partition beginning at 553 MiB.
 # This workflow only builds the CMCC RAX3000M eMMC profile.
 GPT_IMAGE=target/linux/mediatek/image/filogic.mk

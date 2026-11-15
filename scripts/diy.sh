@@ -1,7 +1,17 @@
 #!/bin/bash
 
-# 修改主机名称为Argon(填0为不作修改)
-# export Op_name="Argon"
+# Set the router hostname and LuCI system description on first boot.
+SYSTEM_DEFAULTS=package/base-files/files/etc/uci-defaults/99-rax3000m-system
+mkdir -p "$(dirname "$SYSTEM_DEFAULTS")"
+cat > "$SYSTEM_DEFAULTS" <<'EOF'
+#!/bin/sh
+
+uci -q set 'system.@system[0].hostname=bAIR'
+uci -q set 'system.@system[0].description=A bair ef socks.'
+uci commit system
+exit 0
+EOF
+chmod 0755 "$SYSTEM_DEFAULTS"
 
 # 设置ttyd免密登录(1为启用命令,填0为不作修改)
 export Ttyd_account_free_login="0"
