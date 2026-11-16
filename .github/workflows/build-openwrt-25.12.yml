@@ -43,7 +43,6 @@ jobs:
           chmod +x "$FREE_DISK_SH" "$ENV_SH"
           "$FREE_DISK_SH"
           sudo -E apt-get -qq update -y
-          sudo -E apt-get -qq full-upgrade -y
           bash "$ENV_SH"
           sudo timedatectl set-timezone "$TZ"
           sudo mkdir -p /workdir
