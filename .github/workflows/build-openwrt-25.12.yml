@@ -74,8 +74,37 @@ jobs:
         run: |
           cd /workdir/thunder
           cargo install cargo-zigbuild --version 0.24.1 --locked
-          export CC_aarch64_unknown_linux_musl="zig cc -target aarch64-linux-musl"
-          export CXX_aarch64_unknown_linux_musl="zig c++ -target aarch64-linux-musl"
+          cat > "$RUNNER_TEMP/aarch64-linux-musl-cc" <<'EOF'
+          #!/usr/bin/env bash
+          args=()
+          while (($#)); do
+            case "$1" in
+              --target=aarch64-unknown-linux-musl) shift ;;
+              --target)
+                if [[ "${2:-}" == aarch64-unknown-linux-musl ]]; then shift 2; else args+=("$1"); shift; fi
+                ;;
+              *) args+=("$1"); shift ;;
+            esac
+          done
+          exec zig cc -target aarch64-linux-musl "${args[@]}"
+          EOF
+          cat > "$RUNNER_TEMP/aarch64-linux-musl-cxx" <<'EOF'
+          #!/usr/bin/env bash
+          args=()
+          while (($#)); do
+            case "$1" in
+              --target=aarch64-unknown-linux-musl) shift ;;
+              --target)
+                if [[ "${2:-}" == aarch64-unknown-linux-musl ]]; then shift 2; else args+=("$1"); shift; fi
+                ;;
+              *) args+=("$1"); shift ;;
+            esac
+          done
+          exec zig c++ -target aarch64-linux-musl "${args[@]}"
+          EOF
+          chmod +x "$RUNNER_TEMP/aarch64-linux-musl-cc" "$RUNNER_TEMP/aarch64-linux-musl-cxx"
+          export CC_aarch64_unknown_linux_musl="$RUNNER_TEMP/aarch64-linux-musl-cc"
+          export CXX_aarch64_unknown_linux_musl="$RUNNER_TEMP/aarch64-linux-musl-cxx"
           export AR_aarch64_unknown_linux_musl="zig ar"
           export RUSTFLAGS="-C target-cpu=cortex-a53"
           cargo zigbuild --release --target aarch64-unknown-linux-musl
