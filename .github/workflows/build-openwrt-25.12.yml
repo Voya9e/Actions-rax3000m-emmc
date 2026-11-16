@@ -22,7 +22,7 @@ env:
   REPO_URL: https://github.com/openwrt/openwrt
   REPO_BRANCH: openwrt-25.12
   THUNDER_REPO: https://github.com/Voya9e/thunder.git
-  THUNDER_COMMIT: f0730e35caae492c2e9ec33472516f683c537435
+  THUNDER_BRANCH: main
   FREE_DISK_SH: scripts/free_disk_space.sh
   ENV_SH: scripts/environment.sh
   DIY_SH: scripts/diy-openwrt-25.12.sh
@@ -53,10 +53,10 @@ jobs:
         working-directory: /workdir
         run: |
           git clone --depth 1 --branch "$REPO_BRANCH" "$REPO_URL" openwrt
-          git init thunder
-          git -C thunder remote add origin "$THUNDER_REPO"
-          git -C thunder fetch --depth 1 origin "$THUNDER_COMMIT"
-          git -C thunder checkout --detach FETCH_HEAD
+          git clone --depth 1 --branch "$THUNDER_BRANCH" "$THUNDER_REPO" thunder
+          THUNDER_COMMIT=$(git -C thunder rev-parse HEAD)
+          echo "Thunder source commit: $THUNDER_COMMIT"
+          echo "THUNDER_COMMIT=$THUNDER_COMMIT" >> "$GITHUB_ENV"
           test -f thunder/openwrt/thunder/Makefile
           ln -sfn /workdir/openwrt "$GITHUB_WORKSPACE/openwrt"
 
@@ -177,6 +177,7 @@ jobs:
             "Device: CMCC RAX3000M eMMC" \
             "eMMC max-frequency: ${FREQ}MHz" \
             "EEPROM: ${EEPROM_STATUS}" \
+            "Thunder source commit: ${THUNDER_COMMIT}" \
             "Thunder LuCI: Services → 迅雷 (core initialization is manual)" \
             "VidBee Web: http://192.168.6.1:3000 (first boot initializes the data partition, 1 GiB swap, and downloads official ARM64 images when Internet is available)" > release.txt
           echo "FREQ=$FREQ" >> "$GITHUB_ENV"
