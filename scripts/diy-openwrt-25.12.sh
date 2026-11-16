@@ -14,7 +14,7 @@ exit 0
 EOF
 chmod 0755 "$SYSTEM_DEFAULTS"
 
-# Match the RAX3000M 64 GB eMMC data area: a 57 GiB partition beginning at 553 MiB.
+# Keep a 41 MiB gap after the 512 MiB production partition, then use a 57 GiB data partition.
 # This workflow only builds the CMCC RAX3000M eMMC profile.
 GPT_IMAGE=target/linux/mediatek/image/filogic.mk
 python3 - "$GPT_IMAGE" <<'PY'
@@ -24,7 +24,7 @@ import sys
 
 path = Path(sys.argv[1])
 source = path.read_text()
-marker = "-N data -p 58368M@553M"
+marker = "-N data -p 58368M@617M"
 if marker not in source:
     start_marker = "$(if $(findstring emmc,$1),"
     start = source.index(start_marker)
@@ -34,7 +34,7 @@ if marker not in source:
     end = start + block_end.start()
     emmc_block = source[start:end]
     pattern = re.compile(r"(^[ \t]*-t 0x2e -N production[^\n]*\\$)", re.MULTILINE)
-    partition = "\n\t\t\t-t 0x83 -N data -p 58368M@553M " + chr(92)
+    partition = "\n\t\t\t-t 0x83 -N data -p 58368M@617M " + chr(92)
     emmc_block, replacements = pattern.subn(
         lambda match: match.group(1) + partition,
         emmc_block,
