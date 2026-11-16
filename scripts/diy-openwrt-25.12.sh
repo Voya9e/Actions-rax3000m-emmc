@@ -110,7 +110,7 @@ cat > "$THUNDER_DEFAULTS" <<'EOF'
 
 if [ -f /etc/config/thunder ]; then
     uci -q set 'thunder.main.config_path=/data/thunder'
-    uci -q set 'thunder.main.download_path=/data/thunder/downloads'
+    uci -q set 'thunder.main.download_path=/mnt/data/Downloads/ThunderDownloads'
     uci -q set 'thunder.main.mount_bind_download_path=/thunder'
     uci -q commit thunder
 fi
@@ -156,7 +156,11 @@ initialize_storage() {
         mount -t ext4 -o noatime "$STORAGE_DEVICE" "$STORAGE_MOUNT" || return 1
     fi
 
-    mkdir -p "$STORAGE_MOUNT/docker" "$STORAGE_MOUNT/vidbee/downloads" "$STORAGE_MOUNT/vidbee/data"
+    mkdir -p "$STORAGE_MOUNT/docker" "$STORAGE_MOUNT/vidbee/downloads" "$STORAGE_MOUNT/vidbee/data" \
+        "$STORAGE_MOUNT/Downloads/ThunderDownloads" /mnt/data || return 1
+    if ! awk '$2 == "/mnt/data" { found = 1 } END { exit !found }' /proc/mounts; then
+        mount --bind "$STORAGE_MOUNT" /mnt/data || return 1
+    fi
     chown 1000:1000 "$STORAGE_MOUNT/vidbee/downloads" "$STORAGE_MOUNT/vidbee/data"
     uci -q show dockerd.globals >/dev/null 2>&1 || uci -q set dockerd.globals=globals
     uci -q set 'dockerd.globals.data_root=/data/docker'
