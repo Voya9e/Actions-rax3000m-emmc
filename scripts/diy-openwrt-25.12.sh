@@ -347,6 +347,7 @@ src-git openclash https://github.com/vernesong/OpenClash.git;dev
 src-git small https://github.com/kenzok8/small-package.git
 src-git diskman https://github.com/sbwml/luci-app-diskman.git
 src-git footstrap https://github.com/VizzleTF/luci-theme-footstrap.git
+src-git uniwrt https://github.com/ox1d3x3/uniwrt-luci.git
 src-git kiddin9 https://github.com/kiddin9/op-packages.git
 src-link thunder /workdir/thunder/openwrt
 EOF
