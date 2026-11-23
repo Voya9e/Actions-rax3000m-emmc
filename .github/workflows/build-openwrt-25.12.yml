@@ -136,6 +136,7 @@ jobs:
           ./scripts/feeds install -p kiddin9 luci-app-filebrowser-q
           ./scripts/feeds install -p kiddin9 filebrowser-q
           ./scripts/feeds install -p thunder thunder luci-app-thunder
+          python3 "$GITHUB_WORKSPACE/scripts/patch-rax3000m-dockerd.py" "$PWD"
           python3 "$GITHUB_WORKSPACE/scripts/patch-filebrowser-q-prebuilt.py" "$PWD"
           python3 "$GITHUB_WORKSPACE/scripts/apply-openwrt-25.12-theme-menu.py" "$PWD"
 

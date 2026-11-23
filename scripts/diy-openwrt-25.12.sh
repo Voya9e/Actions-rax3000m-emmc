@@ -109,7 +109,7 @@ cat > "$THUNDER_DEFAULTS" <<'EOF'
 #!/bin/sh
 
 if [ -f /etc/config/thunder ]; then
-    uci -q set 'thunder.main.config_path=/data/thunder'
+    uci -q set 'thunder.main.config_path=/mnt/data/thunder'
     uci -q set 'thunder.main.download_path=/mnt/data/Downloads/ThunderDownloads'
     uci -q set 'thunder.main.mount_bind_download_path=/thunder'
     uci -q commit thunder
@@ -256,7 +256,7 @@ initialize_storage() {
         fi
     fi
 
-    mkdir -p "$STORAGE_MOUNT/docker" "$STORAGE_MOUNT/vidbee/downloads" "$STORAGE_MOUNT/vidbee/data" \
+    mkdir -p "$STORAGE_MOUNT/docker" "$STORAGE_MOUNT/thunder" "$STORAGE_MOUNT/vidbee/downloads" "$STORAGE_MOUNT/vidbee/data" \
         "$STORAGE_MOUNT/Downloads/ThunderDownloads" /mnt/data || return 1
     if ! is_mounted /mnt/data; then
         if awk -v target=/mnt/data '$2 == target { found = 1 } END { exit !found }' /proc/mounts; then
@@ -267,8 +267,10 @@ initialize_storage() {
     fi
     chown 1000:1000 "$STORAGE_MOUNT/vidbee/downloads" "$STORAGE_MOUNT/vidbee/data"
     uci -q show dockerd.globals >/dev/null 2>&1 || uci -q set dockerd.globals=globals
-    uci -q set 'dockerd.globals.data_root=/data/docker'
+    uci -q set 'dockerd.globals.data_root=/mnt/data/docker'
     uci -q commit dockerd
+    /etc/init.d/dockerd enable || return 1
+    /etc/init.d/dockerd running || /etc/init.d/dockerd start || return 1
 
     if swap_is_active; then
         touch "$READY_FLAG"
@@ -308,6 +310,11 @@ start() (
 EOF
 chmod 0755 "$DATA_INIT"
 
+VIDBEE_FIREWALL=package/base-files/files/usr/sbin/vidbee-firewall
+mkdir -p "$(dirname "$VIDBEE_FIREWALL")"
+cp "$(dirname "$0")/vidbee-firewall.sh" "$VIDBEE_FIREWALL"
+chmod 0755 "$VIDBEE_FIREWALL"
+
 VIDBEE_SUPERVISOR=package/base-files/files/usr/sbin/vidbee-supervisor
 mkdir -p "$(dirname "$VIDBEE_SUPERVISOR")"
 cat > "$VIDBEE_SUPERVISOR" <<'EOF'
@@ -317,6 +324,7 @@ DATA_READY_FLAG=/var/run/rax3000m-data.ready
 VIDBEE_ROOT=/data/vidbee
 API_IMAGE=ghcr.io/nexmoe/vidbee-api:latest
 WEB_IMAGE=ghcr.io/nexmoe/vidbee-web:latest
+images_ready=0
 
 log() {
     logger -t vidbee "$*"
@@ -339,14 +347,47 @@ ensure_container() {
     name="$1"
     image="$2"
     shift 2
+    previous="$name-previous"
+    replacing=0
 
-    if docker container inspect "$name" >/dev/null 2>&1; then
-        running="$(docker container inspect --format '{{.State.Running}}' "$name" 2>/dev/null || true)"
-        [ "$running" = true ] || docker start "$name" >/dev/null
-        return
+    # Recover the old container if a reboot interrupted its replacement.
+    if docker container inspect "$previous" >/dev/null 2>&1; then
+        if docker container inspect "$name" >/dev/null 2>&1; then
+            docker rm -f "$name" >/dev/null || return 1
+        fi
+        docker rename "$previous" "$name" || return 1
     fi
 
-    docker run -d --name "$name" --restart unless-stopped "$@" "$image" >/dev/null
+    expected_image="$(docker image inspect --format '{{.Id}}' "$image")" || return 1
+    if docker container inspect "$name" >/dev/null 2>&1; then
+        current_image="$(docker container inspect --format '{{.Image}}' "$name")" || return 1
+        if [ "$current_image" = "$expected_image" ]; then
+            running="$(docker container inspect --format '{{.State.Running}}' "$name")" || return 1
+            [ "$running" = true ] || docker start "$name" >/dev/null
+            return $?
+        fi
+        log "Updating $name to the downloaded image"
+        docker stop "$name" >/dev/null || return 1
+        if ! docker rename "$name" "$previous"; then
+            docker start "$name" >/dev/null || true
+            return 1
+        fi
+        replacing=1
+    fi
+
+    if docker run -d --name "$name" --restart unless-stopped "$@" "$image" >/dev/null; then
+        if [ "$replacing" -eq 1 ]; then
+            docker rm "$previous" >/dev/null || return 1
+        fi
+        return 0
+    fi
+    if [ "$replacing" -eq 1 ]; then
+        docker rm -f "$name" >/dev/null 2>&1 || true
+        docker rename "$previous" "$name" || return 1
+        docker start "$name" >/dev/null || return 1
+        log "Restored $name after replacement failed"
+    fi
+    return 1
 }
 
 while :; do
@@ -361,18 +402,27 @@ while :; do
         sleep 20
         continue
     fi
-
-    if ! docker image inspect "$API_IMAGE" >/dev/null 2>&1; then
-        log "Pulling official VidBee API image"
-        docker pull "$API_IMAGE" || { sleep 60; continue; }
+    if [ "$(docker info --format '{{.DockerRootDir}}' 2>/dev/null)" != /mnt/data/docker ]; then
+        log "Waiting for Docker to use /mnt/data/docker before downloading VidBee"
+        sleep 20
+        continue
     fi
-    if ! docker image inspect "$WEB_IMAGE" >/dev/null 2>&1; then
-        log "Pulling official VidBee Web image"
+
+    # Pull once per supervisor start, including when an older latest is cached.
+    if [ "$images_ready" -eq 0 ]; then
+        log "Checking the latest official VidBee API and Web images"
+        docker pull "$API_IMAGE" || { sleep 60; continue; }
         docker pull "$WEB_IMAGE" || { sleep 60; continue; }
+        images_ready=1
     fi
 
     if ! docker network inspect vidbee >/dev/null 2>&1; then
         docker network create vidbee >/dev/null || { sleep 20; continue; }
+    fi
+    if ! /usr/sbin/vidbee-firewall; then
+        log "Unable to configure VidBee firewall access; retrying"
+        sleep 20
+        continue
     fi
 
     LAN_IP="$(uci -q get network.lan.ipaddr || true)"
@@ -449,9 +499,9 @@ cat > "$VIDBEE_DEFAULTS" <<'EOF'
 #!/bin/sh
 
 uci -q show dockerd.globals >/dev/null 2>&1 || uci -q set dockerd.globals=globals
-uci -q set 'dockerd.globals.data_root=/data/docker'
+uci -q set 'dockerd.globals.data_root=/mnt/data/docker'
 uci -q commit dockerd
-/etc/init.d/dockerd disable >/dev/null 2>&1 || true
+/etc/init.d/dockerd enable
 /etc/init.d/rax3000m-data enable
 /etc/init.d/vidbee enable
 # UCI defaults run inside S10boot, after rcS has expanded its startup list.
