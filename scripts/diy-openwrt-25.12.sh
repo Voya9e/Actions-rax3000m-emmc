@@ -119,6 +119,9 @@ EOF
 chmod 0755 "$THUNDER_DEFAULTS"
 
 # Start VidBee automatically from official ARM64 container images on the eMMC data partition.
+DATA_PLANNER=package/base-files/files/usr/libexec/rax3000m-data-plan.awk
+mkdir -p "$(dirname "$DATA_PLANNER")"
+cp "$(dirname "$0")/plan-rax3000m-data.awk" "$DATA_PLANNER"
 DATA_INIT=package/base-files/files/etc/init.d/rax3000m-data
 mkdir -p "$(dirname "$DATA_INIT")"
 cat > "$DATA_INIT" <<'EOF'
@@ -136,29 +139,130 @@ log() {
     logger -t rax3000m-data "$*"
 }
 
+ensure_data_partition() (
+    [ -b "$STORAGE_DEVICE" ] && exit 0
+    [ -b /dev/mmcblk0 ] || exit 1
+    # A previous boot may have written the GPT but failed to register p6.
+    label="$(sfdisk --part-label /dev/mmcblk0 6 2>/dev/null)"
+    if [ "$label" = data ]; then
+        partx --add --nr 6 /dev/mmcblk0 || exit 1
+        [ -b "$STORAGE_DEVICE" ]
+        exit $?
+    fi
+
+    [ "$(cat /sys/class/block/mmcblk0/queue/logical_block_size)" = 512 ] || exit 1
+    disk_sectors="$(cat /sys/class/block/mmcblk0/size)"
+    work_dir="$(mktemp -d /tmp/rax3000m-partition.XXXXXX)" || exit 1
+    trap 'rm -rf "$work_dir"' EXIT
+    sfdisk --dump /dev/mmcblk0 > "$work_dir/before" || exit 1
+    sfdisk --verify /dev/mmcblk0 > "$work_dir/verify.log" 2>&1 || {
+        log "GPT verification failed; refusing to create a partition"
+        exit 1
+    }
+    kernel_layout=
+    for number in 1 2 3 4 5; do
+        start="$(cat "/sys/class/block/mmcblk0p$number/start")" || exit 1
+        size="$(cat "/sys/class/block/mmcblk0p$number/size")" || exit 1
+        kernel_layout="$kernel_layout$start:$size;"
+    done
+    plan="$(awk -v disk_sectors="$disk_sectors" -v kernel_layout="$kernel_layout" \
+        -f /usr/libexec/rax3000m-data-plan.awk "$work_dir/before" 2> "$work_dir/plan.log")" || {
+        log "Cannot create data partition: $(cat "$work_dir/plan.log")"
+        exit 1
+    }
+    set -- $plan
+    # Keep every original entry, including its UUID and attributes. Extend the
+    # usable GPT range to the real device size before appending partition 6.
+    sed "s/^last-lba:.*/last-lba: $((disk_sectors - 34))/" "$work_dir/before" > "$work_dir/after" || exit 1
+    printf '/dev/mmcblk0p6 : start=%s, size=%s, type=0FC63DAF-8483-4772-8E79-3D69D8477DE4, name="data"\n' "$1" "$2" >> "$work_dir/after"
+    sfdisk --no-act --no-reread --no-tell-kernel --wipe never --wipe-partitions never \
+        /dev/mmcblk0 < "$work_dir/after" > "$work_dir/dry-run.log" 2>&1 || {
+        log "Partition creation dry run failed: $(cat "$work_dir/dry-run.log")"
+        exit 1
+    }
+    backup_dir=/etc/rax3000m-data
+    mkdir -p "$backup_dir" || exit 1
+    [ ! -e "$backup_dir/partition-table.before.sfdisk" ] || {
+        log "An earlier partition creation attempt needs inspection; GPT backup preserved"
+        exit 1
+    }
+    cp "$work_dir/before" "$backup_dir/partition-table.before.sfdisk" || exit 1
+    sync
+    log "Creating data partition in unused eMMC tail space; GPT backup saved in $backup_dir"
+    sfdisk --backup --backup-file "$backup_dir/gpt" --no-reread --no-tell-kernel \
+        --wipe never --wipe-partitions never /dev/mmcblk0 \
+        < "$work_dir/after" > "$backup_dir/create.log" 2>&1 || exit 1
+    sync
+    partx --add --nr 6 /dev/mmcblk0 || exit 1
+    [ -b "$STORAGE_DEVICE" ]
+)
+
 is_mounted() {
-    awk -v device="$STORAGE_DEVICE" -v mountpoint="$STORAGE_MOUNT" \
+    awk -v device="$STORAGE_DEVICE" -v mountpoint="${1:-$STORAGE_MOUNT}" \
         '$1 == device && $2 == mountpoint { found = 1 } END { exit !found }' /proc/mounts
 }
 
-initialize_storage() {
-    [ -b "$STORAGE_DEVICE" ] || return 1
-    [ "$(blkid -s PARTLABEL -o value "$STORAGE_DEVICE" 2>/dev/null || true)" = data ] || return 1
+swap_is_active() {
+    while read -r active_swap rest; do
+        [ "$active_swap" -ef "$SWAPFILE" ] && return 0
+    done < /proc/swaps
+    return 1
+}
 
-    mkdir -p "$STORAGE_MOUNT"
+initialize_storage() {
+    ensure_data_partition || return 1
+    # BLKPG (used by partx) can add p6 without populating sysfs PARTNAME.
+    [ "$(sfdisk --part-label /dev/mmcblk0 6 2>/dev/null)" = data ] || {
+        log "Refusing to use a partition without the data partition label"
+        return 1
+    }
+    geometry="$(partx --show --nr 6 --output START,SECTORS --noheadings --raw /dev/mmcblk0)" || return 1
+    set -- $geometry
+    [ "$#" -eq 2 ] && [ "$1" = "$(cat /sys/class/block/mmcblk0p6/start)" ] \
+        && [ "$2" = "$(cat /sys/class/block/mmcblk0p6/size)" ] || {
+        log "Data partition geometry differs from the running kernel; reboot required"
+        return 1
+    }
+
+    mkdir -p "$STORAGE_MOUNT" || return 1
     if ! is_mounted; then
-        fs_type="$(blkid -s TYPE -o value "$STORAGE_DEVICE" 2>/dev/null || true)"
-        if [ -z "$fs_type" ]; then
-            mkfs.ext4 -F -L data "$STORAGE_DEVICE" || return 1
-            fs_type=ext4
+        if awk -v target="$STORAGE_MOUNT" '$2 == target { found = 1 } END { exit !found }' /proc/mounts; then
+            log "$STORAGE_MOUNT is already used by another filesystem"
+            return 1
         fi
-        [ "$fs_type" = ext4 ] || return 1
-        mount -t ext4 -o noatime "$STORAGE_DEVICE" "$STORAGE_MOUNT" || return 1
+        existing_mount="$(awk -v device="$STORAGE_DEVICE" '$1 == device { print $2; exit }' /proc/mounts)"
+        if [ -n "$existing_mount" ]; then
+            fs_type="$(awk -v device="$STORAGE_DEVICE" '$1 == device { print $3; exit }' /proc/mounts)"
+            case "$fs_type" in
+                ext4|f2fs) mount --bind "$existing_mount" "$STORAGE_MOUNT" || return 1 ;;
+                *) log "Unsupported data filesystem: $fs_type"; return 1 ;;
+            esac
+        else
+            if awk -v device="$STORAGE_DEVICE" '$1 == device { found = 1 } END { exit !found }' /proc/swaps; then
+                log "The data partition is in use as a swap device"
+                return 1
+            fi
+            probe_status=0
+            fs_type="$(blkid -p -s TYPE -o value "$STORAGE_DEVICE" 2>/dev/null)" || probe_status=$?
+            case "$fs_type:$probe_status" in
+                ext4:0|f2fs:0) ;;
+                :2)
+                    mkfs.ext4 -L data "$STORAGE_DEVICE" < /dev/null || return 1
+                    fs_type=ext4
+                    ;;
+                *) log "Cannot safely initialize data (filesystem=$fs_type, probe=$probe_status)"; return 1 ;;
+            esac
+            mount -t "$fs_type" -o noatime "$STORAGE_DEVICE" "$STORAGE_MOUNT" || return 1
+        fi
     fi
 
     mkdir -p "$STORAGE_MOUNT/docker" "$STORAGE_MOUNT/vidbee/downloads" "$STORAGE_MOUNT/vidbee/data" \
         "$STORAGE_MOUNT/Downloads/ThunderDownloads" /mnt/data || return 1
-    if ! awk '$2 == "/mnt/data" { found = 1 } END { exit !found }' /proc/mounts; then
+    if ! is_mounted /mnt/data; then
+        if awk -v target=/mnt/data '$2 == target { found = 1 } END { exit !found }' /proc/mounts; then
+            log "/mnt/data is already used by another filesystem"
+            return 1
+        fi
         mount --bind "$STORAGE_MOUNT" /mnt/data || return 1
     fi
     chown 1000:1000 "$STORAGE_MOUNT/vidbee/downloads" "$STORAGE_MOUNT/vidbee/data"
@@ -166,7 +270,12 @@ initialize_storage() {
     uci -q set 'dockerd.globals.data_root=/data/docker'
     uci -q commit dockerd
 
-    if [ ! -f "$SWAPFILE" ] || [ "$(stat -c '%s' "$SWAPFILE" 2>/dev/null || echo 0)" -ne 1073741824 ]; then
+    if swap_is_active; then
+        touch "$READY_FLAG"
+        log "Data partition mounted; existing swap file is already active"
+        return 0
+    fi
+    if [ ! -e "$SWAPFILE" ]; then
         swap_tmp="$SWAPFILE.tmp"
         rm -f "$swap_tmp"
         dd if=/dev/zero of="$swap_tmp" bs=1M count=1024 || return 1
@@ -175,15 +284,16 @@ initialize_storage() {
         mv "$swap_tmp" "$SWAPFILE" || return 1
     fi
     chmod 0600 "$SWAPFILE"
-    if ! grep -q "^$SWAPFILE " /proc/swaps; then
-        swapon "$SWAPFILE" 2>/dev/null || { mkswap "$SWAPFILE" && swapon "$SWAPFILE"; } || return 1
-    fi
+    swapon "$SWAPFILE" || return 1
 
     touch "$READY_FLAG"
-    log "Data partition mounted and 1 GiB swap enabled"
+    log "Data partition mounted and swap enabled"
 }
 
-start() {
+start() (
+    # UCI defaults and rcS may both request startup during the first boot.
+    mkdir /var/run/rax3000m-data.lock 2>/dev/null || return 0
+    trap 'rmdir /var/run/rax3000m-data.lock' EXIT
     rm -f "$READY_FLAG"
     attempt=0
     while ! initialize_storage; do
@@ -194,7 +304,7 @@ start() {
         }
         sleep 2
     done
-}
+)
 EOF
 chmod 0755 "$DATA_INIT"
 
@@ -212,10 +322,17 @@ log() {
     logger -t vidbee "$*"
 }
 
+swap_is_active() {
+    while read -r active_swap rest; do
+        [ "$active_swap" -ef /data/swapfile ] && return 0
+    done < /proc/swaps
+    return 1
+}
+
 data_is_ready() {
     [ -f "$DATA_READY_FLAG" ] \
         && awk '$1 == "/dev/mmcblk0p6" && $2 == "/data" { found = 1 } END { exit !found }' /proc/mounts \
-        && grep -q '^/data/swapfile ' /proc/swaps
+        && swap_is_active
 }
 
 ensure_container() {
