@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Show Argon and Footstrap settings only for the active LuCI theme."""
+"""Apply theme-specific LuCI menus and UniWRT submenu accordion behavior."""
 
 from pathlib import Path
 import sys
@@ -81,6 +81,24 @@ replace_all(
     "var children = ui.menu.getChildren(tree).filter(function (child) { return child.satisfied !== false; });",
 )
 
+# UniWRT's menu_expanded=0 limits which section opens on page load, but its
+# click handler otherwise lets several sections stay open. Make the collapsed
+# mode behave like Footstrap's auto-collapse option; preserve expand-all mode.
+replace_once(
+    "feeds/uniwrt/luci-theme-uniwrt/htdocs/luci-static/resources/menu-uniwrt.js",
+    '''\t\t\t\t\t\tvar isOpen = subEl.classList.toggle('open');
+\t\t\t\t\t\tnavItem.classList.toggle('open', isOpen);''',
+    '''\t\t\t\t\t\tvar isOpen = subEl.classList.toggle('open');
+\t\t\t\t\t\tnavItem.classList.toggle('open', isOpen);
+\t\t\t\t\t\tif (isOpen && !expandAll) {
+\t\t\t\t\t\t\tgroup.querySelectorAll('.u-nav-sub.open').forEach(function(panel) {
+\t\t\t\t\t\t\t\tif (panel === subEl) return;
+\t\t\t\t\t\t\t\tpanel.classList.remove('open');
+\t\t\t\t\t\t\t\tpanel.previousElementSibling.classList.remove('open');
+\t\t\t\t\t\t\t});
+\t\t\t\t\t\t}''',
+)
+
 # The dispatcher caches menu dependencies by menu-file metadata. Include the
 # active theme in the cache key so UCI-dependent menu visibility updates after
 # the theme changes instead of reusing a stale tree.
@@ -92,4 +110,4 @@ replace_once(
     "\t\t\thash(active_theme, hash_filelist(files)));",
 )
 
-print("Configured theme-specific LuCI menus and cache refresh")
+print("Configured theme-specific LuCI menus, UniWRT submenu folding, and cache refresh")
